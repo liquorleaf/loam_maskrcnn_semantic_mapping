@@ -1,45 +1,40 @@
-# loam_velodyne_Chinese_noted
+#  loam_maskrcnn_semantic_mapping
 
-LOAM学习：论文翻译和详细中文注释，包含代码结构框图、一些勘误和未解决的疑问。
+LOAM and Mask R-CNN Semantic Mapping: semantic labelling for lidar point cloud with a color and a depth camera. Tested with Velodyne VLP-16, Intel D435i, Ubuntu 20.04, OpenCV 4.5.4 and ROS noetic.
 
-# Origin README.md
 
-![Screenshot](/capture.bmp)
-Sample map built from [nsh_indoor_outdoor.bag](http://www.frc.ri.cmu.edu/~jizhang03/Datasets/nsh_indoor_outdoor.bag) (opened with [ccViewer](http://www.danielgm.net/cc/))
+LOAM: https://github.com/laboshinl/loam_velodyne/
 
-:white_check_mark: Tested with ROS Indigo and Velodyne VLP16. [(Screencast)](https://youtu.be/o1cLXY-Es54)
+Mask R-CNN: https://github.com/matterport/Mask_RCNN/
 
-All sources were taken from [ROS documentation](http://docs.ros.org/indigo/api/loam_velodyne/html/files.html)
+Mask R-CNN model example: https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API
 
-Ask questions [here](https://github.com/laboshinl/loam_velodyne/issues/3).
+
+Color file and  Mask R-CNN class name file are provided in `./mask_rcnn_documents`
+
+Before running, please change the path of intrinsic and extrinsic parameter files, color file, Mask R-CNN class name, model and config files in `./src/lib/BasicSemanticMapping.cpp`
+
 
 ## How to build with catkin
 
 ```
-$ cd ~/catkin_ws/src/
-$ git clone https://github.com/laboshinl/loam_velodyne.git
-$ cd ~/catkin_ws
+$ cd ${any path you like}
+$ mkdir -p catkin_ws/src
+$ cd ./catkin_ws/src
+$ git clone https://github.com/Yinshideguanghui/loam_maskrcnn_semantic_mapping.git
+$ catkin_init_workspace
+$ cd ..
 $ catkin_make -DCMAKE_BUILD_TYPE=Release 
-$ source ~/catkin_ws/devel/setup.bash
+$ source ./devel/setup.bash
 ```
 
 ## Running
 
 ```
-roslaunch loam_velodyne loam_velodyne.launch
+roslaunch loam_velodyne_semantic_mapping loam_semantic_mapping.launch
 ```
 
-In second terminal play sample velodyne data from [VLP16 rosbag](http://www.frc.ri.cmu.edu/~jizhang03/Datasets/):
-```
-rosbag play ~/Downloads/velodyne.bag 
-```
-
-Or read from velodyne [VLP16 sample pcap](https://midas3.kitware.com/midas/folder/12979):
-```
-roslaunch velodyne_pointcloud VLP16_points.launch pcap:="$HOME/Downloads/velodyne.pcap"
-```
-
-## Troubleshooting
+## LOAM Troubleshooting
 
 ### `multiScanRegistration` crashes right after playing bag file
 
