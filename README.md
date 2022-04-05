@@ -12,6 +12,8 @@ Mask R-CNN model example: https://github.com/opencv/opencv/wiki/TensorFlow-Objec
 
 Color file and  Mask R-CNN class name file are provided in `./mask_rcnn_documents`
 
+Examples of calibration data are provided in `./calib_params`
+
 Before running, please change the path of intrinsic and extrinsic parameter files, color file, Mask R-CNN class name, model and config files in `./src/lib/BasicSemanticMapping.cpp`
 
 
