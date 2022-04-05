@@ -1,0 +1,32 @@
+%YAML:1.0
+image_width: 1280
+image_height: 720
+camera_name: d435i_color
+camera_matrix: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: f
+  data: [911.5064697265625,   0.     , 636.0296020507812,
+           0.     , 912.0995483398438, 361.6981506347656,
+           0.     ,   0.     ,   1.     ]
+distortion_model: plumb_bob
+distortion_coefficients: !!opencv-matrix
+  rows: 1
+  cols: 5
+  dt: f
+  data: [0., 0., 0., 0., 0.]
+rectification_matrix: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: f
+  data: [1., 0., 0.,
+         0., 1., 0.,
+         0., 0., 1.]
+projection_matrix: !!opencv-matrix
+  rows: 3
+  cols: 4
+  dt: f
+  data: [911.5064697265625,   0.     , 636.0296020507812,   0.     ,
+           0.     , 912.0995483398438, 361.6981506347656,   0.     ,
+           0.     ,   0.     ,   1.     ,   0.     ]
+

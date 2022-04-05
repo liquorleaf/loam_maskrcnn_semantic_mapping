@@ -1,0 +1,10 @@
+%YAML:1.0
+extrinsic_params_matrix: !!opencv-matrix
+  rows: 2
+  cols: 3
+  dt: f
+  data: [-1.5241,   -0.0016,   -1.5087,
+         0.0925 ,   -0.0431,   -0.0704]
+
+# (roll,pitch,yaw,x,y,z) roll,pitch,yaw与实际意义无关，而简单定义为绕X轴转角、绕Y轴转角、绕Z轴转角
+# -1.5241,-0.0016,-1.5087,0.0925,-0.0431,-0.0704
