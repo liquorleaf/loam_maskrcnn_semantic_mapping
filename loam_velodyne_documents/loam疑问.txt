@@ -1,0 +1,52 @@
+1. BasicScanRegistration.h的IMU数据插值中，三个欧拉角为什么只有偏航角要用限制插值在劣弧侧(减少了剧烈旋转)的方法？因为俯仰角和滚转角的剧烈变化可以接受？还是俯仰角和滚转角的剧烈变化在loam应用的载具中不常见？
+
+2. BasicScanRegistration的reset根本没有用newSweep表示新sweep开始，而是if(true)，使得每次processScanlines时都reset。是废案？事实上每个processScanlines即一个sweep(=一轮scan)，每次都reset。和论文不一样，为什么？
+
+3. BasicScanRegistration的configure返回一个bool，实现里却只有return true一种情况，为什么不用void？
+
+4. BasicScanRegistration的setScanBuffersFor计算weighted_distance时两种算式结果一样，为什么分开两种情况算？结果上相当于两种情况都把较远点拉近计算。为了避免上溢？
+
+5. BasicScanRegistration::setRegionBuffersFor中把调用它以前已经算过一遍的region尺寸又算了一遍。那么“把先算好的值直接传进去”和“传更少的参数，在调用后再算一遍”哪个更好？考虑什么？内存占用？速度？该计算的复杂度？
+或者在一定条件下，二者差不多？
+
+6. BasicScanRegistration::setRegionBuffersFor中计算曲率时没有像论文式(1)一样除以中心点到原点距离做归一化。是因为本来就是做差，是相对值，所以根本不需要再做相对归一化？
+（注：听说作者因为要商用化，把代码里很多地方往差的改。这里可能是一处）
+
+7. MultiScanRegistration::process中相对时间的算法是否暗含了限制条件：一个扫描周期内，lidar不应转动超过一圈？
+
+8. MultiScanRegistration::process和BasicLaserMapping::optimizeTransformTobeMapped中计算特征点权重的公式和论文不一样，系数怎么得到的？工程经验？
+（注：听说作者因为要商用化，把代码里很多地方往差的改。这里可能是一处）
+
+9. MultiScanRegistration::process中平面点平方距离最小点搜索时对扫描线的搜索范围有一边是开放的(半开区间)，没有像角点时那样两边限制，是考虑到平坦平面的分布范围和点运动范围大概率比锋锐边缘大很多？
+
+10. 里程计中BasicLaserOdometry::transformToStart和BasicLaserOdometry::transformToEnd要按设计的功能正常运转，则要求两个sweep的间隔内(上个有效sweep结束时刻到这个有效sweep开始时刻)的运动可忽略不计？因为设计似乎是以上个有效sweep结束时刻 = 这个有效sweep开始时刻，即sweep间紧密衔接为前提的。
+
+11. BasicLaserOdometry::process的LM算法中给距离向量d乘了0.05，是为了加快d->0的收敛速度？
+
+12. BasicLaserOdometry::process的LM算法中计算雅可比矩阵时插值系数s全视为1，虽然能提取出来的因子部分都只是一个权重的影响，但cos和sin里面也有s，对结果没有影响？作者似乎尝试修改，但最后决定不改。
+（注：听说作者因为要商用化，把代码里很多地方往差的改。这里可能是一处）
+
+13. BasicLaserOdometry::process里，对应竖直转轴的yaw和竖直方向的平移分量(z分量)在使用之前都乘了1.05，为什么竖直方向计算结果可能偏小，导致要修正？
+
+14. BasicLaserOdometry::accumulateRotation里计算oy和oz时、BasicLaserOdometry::pluginIMURotation里计算acy和acz时：arctan里面分子(正弦)和分母(余弦)同时除以了ox.cos()，为什么？除以一个余弦值把atan2的两个参数同时放大一些有什么数值上的好处吗？
+
+15. BasicLaserOdometry::pluginIMURotation推导：级联YXZ和ZXY旋转的混合旋转矩阵怎么求旋转角？
+
+16. 为什么odometry和mapping模块间数据传输时里程计(_laserOdometryMsg)位姿变四元数、四元数变位姿需要各种取负、交换转轴顺序等复杂操作？为了提前准备好变量，方便后面里程计变换(_laserOdometryTrans)直接创建？
+
+17. 模块间位姿信息的交换似乎通过ROS message就实现了。广播出去的tf::StampedTransform _laserOdometryTrans和_laserOdometryTrans2有什么用？
+
+18. 对BasicLaserMapping::transformAssociateToMap的功能分析不知道对不对？原理上说的通，但没具体计算验证。
+
+19. nearsetKSearch找到的K个最邻近点结果是按距离从小到大排序的吗？
+
+20. odometry的输入输出帧数比_ioRatio似乎是配合mapping的_stackFrameNum和_mapFrameNum使用的，因为后者用来跳过一定帧数，分别不处理(优化)和不建图
+
+21. BasicLaserMapping::process中，_laserCloudCornerStack和_laserCloudSurfStack中的点先用_transformTobeMapped(初始猜测)转到世界坐标系，然后又用_transformTobeMapped(初始猜测)转到lidar坐标系，中间没有使用，为什么还要转换？
+
+22. (先读读)如何理解关于防止非线性优化解退化：https://zhuanlan.zhihu.com/p/258159552？
+
+23. BasicLaserMapping::process中，每次更新地图后都要下采样，是为了防止地图膨胀太快吗？
+
+
+
