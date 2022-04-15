@@ -19,6 +19,8 @@ Before running, please change the path of intrinsic and extrinsic parameter file
 
 ## How to build with catkin
 
+It is needed to adapt cv_bridge package of ROS to use OpenCV built with GPU support.
+
 ```
 $ cd ${any path you like}
 $ mkdir -p catkin_ws/src
