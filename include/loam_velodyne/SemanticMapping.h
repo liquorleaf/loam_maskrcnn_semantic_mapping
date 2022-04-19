@@ -21,7 +21,7 @@
 namespace loam
 {
 
-constexpr int IMAGE_BUFFER_SIZE = 300;   // 图像message缓冲器大小(相机帧率30，loam建图输出延迟约1s，语义建图一次约)(太小无法同步，太大时空资源消耗太大)
+constexpr int IMAGE_BUFFER_SIZE = 300;  // 图像message缓冲器大小(相机帧率30，loam建图输出延迟约1s，语义建图一次上限按1s)(太小无法同步，太大时空资源消耗太大)
 constexpr double SYNCHRON_THRE = 0.016; // (用于判断图像和点云message同步)时间戳差值的阈值(相机30帧左右，估计每0.033秒来一次图像，一半算0.016s)
 
 /** /brief 类：语义建图组件的实现。 */
