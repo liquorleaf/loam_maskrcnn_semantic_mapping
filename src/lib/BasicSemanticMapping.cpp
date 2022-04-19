@@ -40,9 +40,9 @@ BasicSemanticMapping::BasicSemanticMapping(const float& confidenceThreshold, con
     }
     ifs.close();
     // 加载网络
+    _MaskrcnnNet = cv::dnn::readNetFromTensorflow(_modelWeightsFile, _modelConfigFile);
     _MaskrcnnNet.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
     _MaskrcnnNet.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA);
-    _MaskrcnnNet = cv::dnn::readNetFromTensorflow(_modelWeightsFile, _modelConfigFile);
     // 网络输出名称
     _outNames.resize(2);
     _outNames[0] = "detection_out_final";
@@ -87,6 +87,7 @@ BasicSemanticMapping::BasicSemanticMapping(const float& confidenceThreshold, con
 void BasicSemanticMapping::process()
 {
     timeval t1,t2;
+    u_int64_t T;
     gettimeofday(&t1, NULL);
 
     _semanticCloud->clear(); // 清除上一帧lidar语义点云
@@ -132,7 +133,7 @@ void BasicSemanticMapping::process()
          * 利用lidar坐标系的位姿，将目标掩膜点云转换到世界坐标系
          */ 
         // 新建一幅全黑图，用frame(box)法获得掩膜图
-        pcl::PointXYZ pTempCL;           // 从相机坐标系到lidar坐标系时临时存放点
+        pcl::PointXYZI pTempC;           // 从相机坐标系到lidar坐标系时临时存放点
         pcl::PointXYZI pTempLW;          // 从lidar坐标系到世界坐标系时临时存放点
         float pDepth = 0.0f, pX = 0.0f, pY = 0.0f, pXd = 0.0f, pYd = 0.0f, // 临时存放点深度、畸变校正前后的X坐标和Y坐标等
               pXpY = 0.0f, pXpX = 0.0f, pYpY = 0.0f; // 畸变校正计算中间变量
@@ -169,62 +170,74 @@ void BasicSemanticMapping::process()
                             + _distortionCoeff.at<float>(0,2) * (rSqr + 2.0f * pYpY);
                     }
                     // 相机坐标 = 深度*归一化相机坐标
-                    pTempCL.x = pDepth * pXd;
-                    pTempCL.y = pDepth * pYd;
-                    pTempCL.z = pDepth; // * 1.0
-                    // lidar坐标 = 相机坐标使用外参做(rx,ry,rz,t)变换(此处使用弧度制，且定义的相机坐标系X右Y下Z前，lidar坐标系X前Y左Z上)
-                    rotX(pTempCL, _camLidarTrans.at<float>(0,0));
-                    rotY(pTempCL, _camLidarTrans.at<float>(0,1));
-                    rotZ(pTempCL, _camLidarTrans.at<float>(0,2));
-                    pTempCL.x += _camLidarTrans.at<float>(1,0);
-                    pTempCL.y += _camLidarTrans.at<float>(1,1);
-                    pTempCL.z += _camLidarTrans.at<float>(1,2);
-                    // 坐标轴统一：lidar坐标系X前Y左Z上，loam统一坐标系X左Y上Z前
-                    pTempLW.x = pTempCL.y;
-                    pTempLW.y = pTempCL.z;
-                    pTempLW.z = pTempCL.x;
-                    // 世界坐标 = lidar坐标使用SLAM部分得到的位姿做(roll,pitch,yaw,t)，即(rz,rx,ry,t)变换
-                    rotZ(pTempLW, _transformAftMapped.rot_z);
-                    rotX(pTempLW, _transformAftMapped.rot_x);
-                    rotY(pTempLW, _transformAftMapped.rot_y);
-                    pTempLW.x += _transformAftMapped.pos.x();
-                    pTempLW.y += _transformAftMapped.pos.y();
-                    pTempLW.z += _transformAftMapped.pos.z();
-                    // 该语义点进入实例点云
-                    _instanceCloud[instInd]->push_back(pTempLW);
-//pcl::PointXYZL ptLabeled0;ptLabeled0.x = pTempLW.x;ptLabeled0.y = pTempLW.y;ptLabeled0.z = pTempLW.z;ptLabeled0.label = _objectClassId[instInd];
-//_semanticCloud->push_back(ptLabeled0);
+                    pTempC.x = pDepth * pXd;
+                    pTempC.y = pDepth * pYd;
+                    pTempC.z = pDepth; // * 1.0
+                    // 该语义点进入实例点云（相机坐标）
+                    _instanceCloud[instInd]->push_back(pTempC);
                 }
             }
         } // END for (掩膜图像素点遍历)
-
-        // 实例点云下采样精简、去除NaN无效点、构建KD树
+        // 实例点云下采样精简
         _downSizeFilterInstance.setInputCloud(_instanceCloud[instInd]);
         _downSizeFilterInstance.filter(*_instanceCloudDS[instInd]);
+        // 实例点云转到世界坐标系
+        for(auto& pCL : *(_instanceCloudDS[instInd]))
+        {
+            // lidar坐标 = 相机坐标使用外参做(rx,ry,rz,t)变换(此处使用弧度制，且定义的相机坐标系X右Y下Z前，lidar坐标系X前Y左Z上)
+            rotX(pCL, _camLidarTrans.at<float>(0,0));
+            rotY(pCL, _camLidarTrans.at<float>(0,1));
+            rotZ(pCL, _camLidarTrans.at<float>(0,2));
+            pCL.x += _camLidarTrans.at<float>(1,0);
+            pCL.y += _camLidarTrans.at<float>(1,1);
+            pCL.z += _camLidarTrans.at<float>(1,2);
+            // 坐标轴统一：lidar坐标系X前Y左Z上，loam统一坐标系X左Y上Z前
+            pTempLW.x = pCL.y;
+            pTempLW.y = pCL.z;
+            pTempLW.z = pCL.x;
+            // 世界坐标 = lidar坐标使用SLAM部分得到的位姿做(roll,pitch,yaw,t)，即(rz,rx,ry,t)变换
+            rotZ(pTempLW, _transformAftMapped.rot_z);
+            rotX(pTempLW, _transformAftMapped.rot_x);
+            rotY(pTempLW, _transformAftMapped.rot_y);
+            pTempLW.x += _transformAftMapped.pos.x();
+            pTempLW.y += _transformAftMapped.pos.y();
+            pTempLW.z += _transformAftMapped.pos.z();
+            pCL.x = pTempLW.x;
+            pCL.y = pTempLW.y;
+            pCL.z = pTempLW.z;
+        } // END for (当前实例点云遍历)
+        // 实例点云去除NaN无效点、构建KD树
         std::vector<int> pclInd;    // 去除NaN无效点时用到的辅助容器
         pcl::removeNaNFromPointCloud(*(_instanceCloudDS[instInd]), *(_instanceCloudDS[instInd]), pclInd);   // 谨慎起见，实例点云去除一次NaN无效点
-//for(auto& pt : *(_instanceCloud[instInd])){pcl::PointXYZL ptLabeled0;ptLabeled0.x = pt.x;ptLabeled0.y = pt.y;ptLabeled0.z = pt.z;ptLabeled0.label = _objectClassId[instInd];_semanticCloud->push_back(ptLabeled0);}
         _instanceKDTree[instInd].setInputCloud(_instanceCloudDS[instInd]);    // 实例点云构建KD树，便于查找其中点
+//for(auto& pt : *(_instanceCloudDS[instInd])){pcl::PointXYZL ptLabeled0;ptLabeled0.x = pt.x;ptLabeled0.y = pt.y;ptLabeled0.z = pt.z;ptLabeled0.label = _objectClassId[instInd];_semanticCloud->push_back(ptLabeled0);}
     } // END for (Mask R-CNN分割结果实例遍历)
 
     // 遍历lidar点云，和实例点云做距离匹配，若成功，则打上距离最小的实例的语义标签
     std::vector<std::vector<int>> pointSearchInd(_numMaskDetections);       // 搜索到的最近实例点的索引
     std::vector<std::vector<float>> pointSearchSqrDist(_numMaskDetections); // 搜索到的最近实例点离当前lidar点的距离平方
     pcl::PointXYZL ptLabeled;                                               // 临时存放打上标签的目标点
-    pcl::PointXYZI pt;                                                      // 临时存放提取的lidar点
+    pcl::PointXYZI pt, ptL;                                                 // 临时存放提取的lidar点（世界坐标、lidar坐标）
     int laserCloudSize = _laserCloudFullRes->size();
+    bool hasInstance = _numMaskDetections > 0;
     for (int ptInd = 0; ptInd < laserCloudSize; ptInd++) // 对lidar点云中的每个点遍历
     {
         pt = _laserCloudFullRes->at(ptInd);
-
-        // if (pt.z > 0) // 可选速率优化？？？Z坐标<=0的点在相机视野外，不参与语义地图；但不应加到这里，因为这里是世界坐标系；不知道全点转换坐标系和多搜索一半的点哪个用时更长
+        ptL = pt;
+        // lidar坐标到世界坐标做(rz,rx,ry,t)变换，说明世界坐标系到lidar坐标系需(-t,-ry,-rx,-rz)变换
+        ptL.x -= _transformAftMapped.pos.x();
+        ptL.y -= _transformAftMapped.pos.y();
+        ptL.z -= _transformAftMapped.pos.z();
+        rotY(ptL, _transformAftMapped.rot_y);
+        rotX(ptL, _transformAftMapped.rot_x);
+        rotZ(ptL, _transformAftMapped.rot_z);
 
         // 默认分类为“无”
         ptLabeled.x = pt.x;
         ptLabeled.y = pt.y;
         ptLabeled.z = pt.z;
         ptLabeled.label = _classNames.size();
-        if (_numMaskDetections > 0) // 若有实例，再进行语义搜索
+        if (ptL.z > 0.0f && hasInstance) // 若有实例并且该点在lidar前方，再进行语义搜索（因相机指向lidar前方）
         {
             // 搜索每个实例最近的实例点，记录平方距离
             for (int instInd = 0; instInd < _numMaskDetections; instInd++)
@@ -257,7 +270,7 @@ void BasicSemanticMapping::process()
 
     //计算用时
     gettimeofday(&t2, NULL);
-    u_int64_t T = (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec) / 1000;
+    T = (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec) / 1000;
     std::cout << T << "ms" << std::endl;
 }
 

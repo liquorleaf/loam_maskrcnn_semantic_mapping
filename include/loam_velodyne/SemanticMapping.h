@@ -98,7 +98,8 @@ private:
     bool _newDepthImage;           ///< 是否接收到深度图的flag
 
     /** publisher */
-    ros::Publisher _pubSemanticMap;             ///< 发布：语义地图点云
+    ros::Publisher _pubSemanticMap;                ///< 发布：单帧语义地图点云
+    ros::Publisher _pubSemanticMapTotal;           ///< 发布：总体语义地图点云
     ros::Publisher _pubSegmentationResult;         ///< 发布：本次图像实例分割结果
 
     /** subscriber */
