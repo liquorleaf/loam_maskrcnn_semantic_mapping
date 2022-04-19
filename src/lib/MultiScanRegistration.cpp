@@ -71,7 +71,8 @@ int MultiScanMapper::getRingForAngle(const float& angle) {
 
 
 MultiScanRegistration::MultiScanRegistration(const MultiScanMapper& scanMapper)
-    : _scanMapper(scanMapper)
+    : _scanMapper(scanMapper),
+      _scanRegistNearest(SCAN_REGIST_NEAREST_DEFAULT)
 {};
 
 
@@ -133,6 +134,20 @@ bool MultiScanRegistration::setupROS(ros::NodeHandle& node, ros::NodeHandle& pri
       ROS_INFO("Set linear scan mapper from %g to %g degrees with %d scan rings.", vAngleMin, vAngleMax, nScanRings);
     }
   }
+
+  float fParam;
+  if (privateNode.getParam("scanRegistNearest", fParam)) {
+    if (fParam <= 0) { // 注册扫描点的距离下限必须为正
+      ROS_ERROR("Invalid scanRegistNearest parameter: %f (expected > 0)", fParam);
+      return false;
+    } else {
+        _scanRegistNearest = fParam;
+      ROS_INFO("Set scanRegistNearest: %g", fParam);
+    }
+  }
+
+
+
 
   // subscribe to input cloud topic 订阅点云输入topic，用handleCloudMessage处理
   _subLaserCloud = node.subscribe<sensor_msgs::PointCloud2>
@@ -205,7 +220,7 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
     }
 
     // skip zero valued points 若点和原点几乎重合，则视为无效点
-    if (point.x * point.x + point.y * point.y + point.z * point.z < 0.6) {
+    if (point.x * point.x + point.y * point.y + point.z * point.z < _scanRegistNearest) {
       continue;
     }
 

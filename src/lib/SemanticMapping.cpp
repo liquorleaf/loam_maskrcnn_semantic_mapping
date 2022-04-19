@@ -61,12 +61,13 @@ bool SemanticMapping::setup(ros::NodeHandle& node, ros::NodeHandle& privateNode)
     }
 
     // advertise semantic mapping topics
-    _pubSemanticMap = node.advertise<sensor_msgs::PointCloud2>("/semantic_cloud_map", 1);
+    _pubSemanticMap = node.advertise<sensor_msgs::PointCloud2>("/semantic_cloud_map", 2);
+    _pubSemanticMapTotal = node.advertise<sensor_msgs::PointCloud2>("/semantic_cloud_map_total", 2);
     _pubSegmentationResult = node.advertise<sensor_msgs::Image>("/instance_segmentation_result", 100);
 
     // subscribe to laser mapping topics
     _subLaserCloudFullRes = node.subscribe<sensor_msgs::PointCloud2>
-        ("/velodyne_cloud_registered", 1, &SemanticMapping::laserCloudFullResHandler, this);
+        ("/velodyne_cloud_registered", 2, &SemanticMapping::laserCloudFullResHandler, this);
     _subTransformAftMapped = node.subscribe<nav_msgs::Odometry>
         ("/aft_mapped_to_init", 5, &SemanticMapping::transformAftMappedHandler, this);
 
@@ -248,8 +249,8 @@ void SemanticMapping::publishResult()
     _pubSegmentationResult.publish(_rgbSegmentedMsg);
 
     // 发布语义地图点云
-    // publishCloudMsg(_pubSemanticMap, semanticCloud(), _timeLaserCloudFullRes, "camera_init");
-    publishCloudMsg(_pubSemanticMap, semanticMapCloudFullRes(), _timeLaserCloudFullRes, "camera_init");
+    publishCloudMsg(_pubSemanticMap, semanticCloud(), _timeLaserCloudFullRes, "camera_init");
+    publishCloudMsg(_pubSemanticMapTotal, semanticMapCloudFullRes(), _timeLaserCloudFullRes, "camera_init");
 }
 
 
