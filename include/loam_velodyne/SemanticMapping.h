@@ -76,7 +76,8 @@ protected:
 
 private:
     /** data received */
-    cv_bridge::CvImage _rgbSegmented;               ///< Mask R-CNN实例分割结果展示图(时间是本次mapping正对的sweep开始时)
+    double _cloudTime;                                ///< lidar点云时间戳
+    cv_bridge::CvImage _rgbSegmented;                 ///< Mask R-CNN实例分割结果展示图(时间是本次mapping正对的sweep开始时)
     std::vector<sensor_msgs::Image> _rgbMsgBuffer;    ///< 时间同步辅助工具：rgb图像缓冲器
     std::vector<sensor_msgs::Image> _depthMsgBuffer;  ///< 时间同步辅助工具：深度图像缓冲器
     int _rgbMsgBufferHead;                            ///< rgb图像缓冲器队首(时间最早的项)位置
@@ -99,6 +100,7 @@ private:
 
     /** publisher */
     ros::Publisher _pubSemanticMap;                ///< 发布：单帧语义地图点云
+    ros::Publisher _pubSemanticMapLidarInst;       ///< 发布：单帧语义lidar实例点云
     ros::Publisher _pubSemanticMapTotal;           ///< 发布：总体语义地图点云
     ros::Publisher _pubSegmentationResult;         ///< 发布：本次图像实例分割结果
 

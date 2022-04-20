@@ -2,10 +2,10 @@
 
   <arg name="rviz" default="true" />
   <arg name="scanPeriod" default="0.1" />
-  <arg name="scanRegistNearest" default="5" />
+  <arg name="scanRegistNearest" default="0.0001" />
   <arg name="confidenceThreshold" default="0.75" />
   <arg name="maskThreshold" default="0.75" />
-  <arg name="matchSqDistThreshold" default="0.009" />
+  <arg name="matchSqDistThreshold" default="0.001" />
 
   <node pkg="loam_velodyne_semantic_mapping" type="multiScanRegistration" name="multiScanRegistration" output="screen">
     <param name="lidar" value="VLP-16" /> <!-- options: VLP-16  HDL-32  HDL-64E -->

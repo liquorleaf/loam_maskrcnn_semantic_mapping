@@ -19,6 +19,7 @@ BasicSemanticMapping::BasicSemanticMapping(const float& confidenceThreshold, con
     _numMaskDetections(0),
     _laserCloudFullRes(new pcl::PointCloud<pcl::PointXYZI>()),
     _semanticCloud(new pcl::PointCloud<pcl::PointXYZL>()),
+    _semanticCloudLidarInst(new pcl::PointCloud<pcl::PointXYZL>()),
     _semanticMapCloudFullRes(new pcl::PointCloud<pcl::PointXYZL>())
 {
     /** 加载Mask R-CNN网络 */
@@ -84,13 +85,15 @@ BasicSemanticMapping::BasicSemanticMapping(const float& confidenceThreshold, con
 }
 
 
-void BasicSemanticMapping::process()
+void BasicSemanticMapping::process(double cloudTime)
 {
-    timeval t1,t2;
     u_int64_t T;
-    gettimeofday(&t1, NULL);
+    ros::Time semanticMappingStartTime = ros::Time::now();
+    T = u_int64_t((semanticMappingStartTime.toSec() - cloudTime) * 1000);
+    ROS_INFO("Current frame LOAM mapping takes %ld ms.", T);
 
     _semanticCloud->clear(); // 清除上一帧lidar语义点云
+    _semanticCloudLidarInst->clear(); // 清除上一帧lidar语义点云
 
     /** Mask R-CNN实例分割：得到语义标签 */
     /* Create a 4D blob from a frame.
@@ -260,6 +263,7 @@ void BasicSemanticMapping::process()
 
         // lidar点加入当前帧语义点云
         _semanticCloud->push_back(ptLabeled);
+        if (ptLabeled.label != _classNames.size()) { _semanticCloudLidarInst->push_back(ptLabeled); }
     } // END for (lidar当前帧每个点遍历)
 
     /** 把本次做了语义处理的点云合并到总体语义点云地图中 */
@@ -269,9 +273,9 @@ void BasicSemanticMapping::process()
     delete[] _instanceKDTree;
 
     //计算用时
-    gettimeofday(&t2, NULL);
-    T = (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec) / 1000;
-    std::cout << T << "ms" << std::endl;
+    ros::Time semanticMappingEndTime = ros::Time::now();
+    T = u_int64_t((semanticMappingEndTime.toSec() - semanticMappingStartTime.toSec()) * 1000);
+    ROS_INFO("Current frame semantic mapping takes %ld ms.\n", T);
 }
 
 
