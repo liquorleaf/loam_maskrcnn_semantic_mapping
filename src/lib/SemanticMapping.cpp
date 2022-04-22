@@ -61,12 +61,14 @@ bool SemanticMapping::setup(ros::NodeHandle& node, ros::NodeHandle& privateNode)
     }
 
     // advertise semantic mapping topics
-    _pubSemanticMap = node.advertise<sensor_msgs::PointCloud2>("/semantic_cloud_map", 1);
+    _pubSemanticMap = node.advertise<sensor_msgs::PointCloud2>("/semantic_cloud_map", 2);
+    _pubSemanticMapLidarInst = node.advertise<sensor_msgs::PointCloud2>("/semantic_cloud_map_lidar_inst", 2);
+    _pubSemanticMapTotal = node.advertise<sensor_msgs::PointCloud2>("/semantic_cloud_map_total", 2);
     _pubSegmentationResult = node.advertise<sensor_msgs::Image>("/instance_segmentation_result", 100);
 
     // subscribe to laser mapping topics
     _subLaserCloudFullRes = node.subscribe<sensor_msgs::PointCloud2>
-        ("/velodyne_cloud_registered", 1, &SemanticMapping::laserCloudFullResHandler, this);
+        ("/velodyne_cloud_registered", 2, &SemanticMapping::laserCloudFullResHandler, this);
     _subTransformAftMapped = node.subscribe<nav_msgs::Odometry>
         ("/aft_mapped_to_init", 5, &SemanticMapping::transformAftMappedHandler, this);
 
@@ -162,7 +164,7 @@ void SemanticMapping::process()
 
    reset(); // reset flags, etc.
 
-   BasicSemanticMapping::process();
+   BasicSemanticMapping::process(_cloudTime);
 
    publishResult();
 }
@@ -185,16 +187,16 @@ bool SemanticMapping::hasNewData()
      * 3. 存在和rgb图像时间戳相同的深度图像。
      */ 
 
-    double cloudTime = _timeLaserCloudFullRes.toSec();  // 点云时间戳
+    _cloudTime = _timeLaserCloudFullRes.toSec();  // 点云时间戳
     // 若数据不全，则无法处理
     if (!(_newLaserCloudFullRes && _newTransformAftMapped && _newRGBImage && _newDepthImage))
         return false;
     if (_rgbMsgBuffer.empty() || _depthMsgBuffer.empty())
         return false;
     // 若最早的rgb图像也比点云晚太多，或最晚的rgb图像也比点云早太多，则不存在足够早的能同步的图像
-    if (_rgbMsgBuffer.at(_rgbMsgBufferHead).header.stamp.toSec() - cloudTime > SYNCHRON_THRE)
+    if (_rgbMsgBuffer.at(_rgbMsgBufferHead).header.stamp.toSec() - _cloudTime > SYNCHRON_THRE)
         return false;
-    else if (_rgbMsgBuffer.at((_rgbMsgBufferHead-1<0)?(_rgbMsgBuffer.size()-1):(_rgbMsgBufferHead-1)).header.stamp.toSec() - cloudTime < SYNCHRON_THRE)
+    else if (_rgbMsgBuffer.at((_rgbMsgBufferHead-1<0)?(_rgbMsgBuffer.size()-1):(_rgbMsgBufferHead-1)).header.stamp.toSec() - _cloudTime < SYNCHRON_THRE)
         return false;
 
     bool hasNewDataFlag = false;
@@ -202,7 +204,7 @@ bool SemanticMapping::hasNewData()
     for (int ind = 0; ind < _rgbMsgBuffer.size(); ind++)
     {
         _timeRGBImage = _rgbMsgBuffer.at(ind).header.stamp;
-        if (abs(_timeRGBImage.toSec() - cloudTime) <= SYNCHRON_THRE)
+        if (abs(_timeRGBImage.toSec() - _cloudTime) <= SYNCHRON_THRE)
         {
             // 提取rgb图像及其信息
             _rgbSegmented.header.stamp = _rgbMsgBuffer.at(ind).header.stamp;
@@ -248,8 +250,9 @@ void SemanticMapping::publishResult()
     _pubSegmentationResult.publish(_rgbSegmentedMsg);
 
     // 发布语义地图点云
-    // publishCloudMsg(_pubSemanticMap, semanticCloud(), _timeLaserCloudFullRes, "camera_init");
-    publishCloudMsg(_pubSemanticMap, semanticMapCloudFullRes(), _timeLaserCloudFullRes, "camera_init");
+    publishCloudMsg(_pubSemanticMap, semanticCloud(), _timeLaserCloudFullRes, "camera_init");
+    publishCloudMsg(_pubSemanticMapLidarInst, semanticCloudLidarInst(), _timeLaserCloudFullRes, "camera_init");
+    publishCloudMsg(_pubSemanticMapTotal, semanticMapCloudFullRes(), _timeLaserCloudFullRes, "camera_init");
 }
 
 

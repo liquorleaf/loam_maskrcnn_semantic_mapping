@@ -61,7 +61,7 @@ public:
     explicit BasicSemanticMapping(const float& confidenceThreshold = DEFAULT_CONFI_THRE, const float& maskThreshold = DEFAULT_MASK_THRE, const float& matchSqDistThreshold = DEFAULT_MATCH_SQ_DIST_THRE);
 
     /** 尝试处理缓冲的数据 */
-    void process();
+    void process(double cloudTime);
     /** 用接收到的最新位姿变换更新_transformAftMapped */
     void updateTransform(double pitch, double yaw, double roll, double x, double y, double z);
 
@@ -73,6 +73,7 @@ public:
     auto& rgbImageSegmented() { return _rgbImageSegmented; }
 
     auto const& semanticCloud()           const { return *_semanticCloud; }
+    auto const& semanticCloudLidarInst()  const { return *_semanticCloudLidarInst; }
     auto const& semanticMapCloudFullRes() const { return *_semanticMapCloudFullRes; }
     auto const& transformAftMapped()      const { return _transformAftMapped; }
     
@@ -97,6 +98,7 @@ private:  // 成员变量
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr _laserCloudFullRes;        ///< 本次mapping的全分辨率点云(世界坐标系)
     pcl::PointCloud<pcl::PointXYZL>::Ptr _semanticCloud;            ///< 本次mapping的语义点云(世界坐标系)
+    pcl::PointCloud<pcl::PointXYZL>::Ptr _semanticCloudLidarInst;   ///< 本次mapping的实例lidar语义点云(世界坐标系)
     pcl::PointCloud<pcl::PointXYZL>::Ptr _semanticMapCloudFullRes;  ///< 累积语义全分辨率点云(世界坐标系)
         
     std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> _instanceCloud;     ///< 实例点云的向量

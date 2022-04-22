@@ -21,7 +21,7 @@
 namespace loam
 {
 
-constexpr int IMAGE_BUFFER_SIZE = 300;   // 图像message缓冲器大小(相机帧率30，loam建图输出延迟约1s，语义建图一次约)(太小无法同步，太大时空资源消耗太大)
+constexpr int IMAGE_BUFFER_SIZE = 300;  // 图像message缓冲器大小(相机帧率30，loam建图输出延迟约1s，语义建图一次上限按1s)(太小无法同步，太大时空资源消耗太大)
 constexpr double SYNCHRON_THRE = 0.016; // (用于判断图像和点云message同步)时间戳差值的阈值(相机30帧左右，估计每0.033秒来一次图像，一半算0.016s)
 
 /** /brief 类：语义建图组件的实现。 */
@@ -76,7 +76,8 @@ protected:
 
 private:
     /** data received */
-    cv_bridge::CvImage _rgbSegmented;               ///< Mask R-CNN实例分割结果展示图(时间是本次mapping正对的sweep开始时)
+    double _cloudTime;                                ///< lidar点云时间戳
+    cv_bridge::CvImage _rgbSegmented;                 ///< Mask R-CNN实例分割结果展示图(时间是本次mapping正对的sweep开始时)
     std::vector<sensor_msgs::Image> _rgbMsgBuffer;    ///< 时间同步辅助工具：rgb图像缓冲器
     std::vector<sensor_msgs::Image> _depthMsgBuffer;  ///< 时间同步辅助工具：深度图像缓冲器
     int _rgbMsgBufferHead;                            ///< rgb图像缓冲器队首(时间最早的项)位置
@@ -98,7 +99,9 @@ private:
     bool _newDepthImage;           ///< 是否接收到深度图的flag
 
     /** publisher */
-    ros::Publisher _pubSemanticMap;             ///< 发布：语义地图点云
+    ros::Publisher _pubSemanticMap;                ///< 发布：单帧语义地图点云
+    ros::Publisher _pubSemanticMapLidarInst;       ///< 发布：单帧语义lidar实例点云
+    ros::Publisher _pubSemanticMapTotal;           ///< 发布：总体语义地图点云
     ros::Publisher _pubSegmentationResult;         ///< 发布：本次图像实例分割结果
 
     /** subscriber */

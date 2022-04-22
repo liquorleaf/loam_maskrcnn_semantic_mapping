@@ -41,7 +41,7 @@
 
 namespace loam {
 
-
+constexpr float SCAN_REGIST_NEAREST_DEFAULT = 0.0001;   // 注册扫描点的最近距离默认值
 
 /** \brief Class realizing a linear mapping from vertical point angle to the corresponding scan ring.
  * 一个类：多线竖直角-扫描环ID映射器。实现从“点的竖直方向夹角”到对应的“扫描环(扫描平面)”间的线性映射
@@ -140,6 +140,7 @@ private:
   std::vector<pcl::PointCloud<pcl::PointXYZI> > _laserCloudScans; // 存储接收的点云的向量，元素为单个扫描环点云
   ros::Subscriber _subLaserCloud;   ///< input cloud message subscriber 订阅：点云message
 
+  float _scanRegistNearest;   ///< 注册扫描点的最近距离，比它近的点不参与SLAM
 };
 
 } // end namespace loam

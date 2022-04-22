@@ -16,6 +16,8 @@ Examples of calibration data are provided in `./calib_params`
 
 Before running, please change the path of intrinsic and extrinsic parameter files, color file, Mask R-CNN class name, model and config files in `./src/lib/BasicSemanticMapping.cpp`
 
+![Screenshot](/mapping_indoors_1.bmp)
+Sample map, opened with rviz.
 
 ## How to build with catkin
 
