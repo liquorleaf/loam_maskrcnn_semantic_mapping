@@ -147,8 +147,7 @@ bool ScanRegistration::setupROS(ros::NodeHandle& node, ros::NodeHandle& privateN
     return false;
 
   // subscribe to IMU topic 订阅：IMU数据，队列最多排队message数=50(超出的舍弃)，使用ScanRegistration::handleIMUMessage处理本对象的message
-  //_subImu = node.subscribe<sensor_msgs::Imu>("/imu/data", 50, &ScanRegistration::handleIMUMessage, this);
-  _subImu = node.subscribe<sensor_msgs::Imu>("/imu/data1", 50, &ScanRegistration::handleIMUMessage, this);
+  _subImu = node.subscribe<sensor_msgs::Imu>("/imu/data", 50, &ScanRegistration::handleIMUMessage, this);
 
   // advertise scan registration topics 发布：完整点云、四种特征点云、IMU位姿变换；点云队列最多2个，IMU信息队列最多5个
   _pubLaserCloud            = node.advertise<sensor_msgs::PointCloud2>("/velodyne_cloud_2", 2);
